@@ -1,0 +1,13 @@
+{
+  "env": "dev",
+  "service-name": "posts-service",
+  "postgres": {
+    "port": 5432,
+    "user": "eduardopena",
+    "password": "",
+    "host": "localhost",
+    "database": "posts",
+    "ssl": false
+  },
+  "port": 8080
+}
