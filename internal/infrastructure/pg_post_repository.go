@@ -2,11 +2,13 @@ package infrastructure
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"time"
 	"uala-posts-service/internal/domain/posts"
 	"uala-posts-service/internal/domain/posts/content"
@@ -20,14 +22,16 @@ const (
             author_id,
             created_at,
             updated_at,
-            deleted_at
+            deleted_at,
+        	published_at
         ) VALUES (
             :id,
             :content,
             :author_id,
             :created_at,
             :updated_at,
-            :deleted_at
+            :deleted_at,
+            :published_at
         )
     `
 
@@ -38,9 +42,22 @@ const (
             author_id,
             created_at,
             updated_at,
-            deleted_at
+            deleted_at,
+            published_at
         FROM posts
         WHERE id = $1 AND deleted_at IS NULL
+    `
+	getPostByIdsQuery = `
+        SELECT 
+            id,
+            content,
+            author_id,
+            created_at,
+            updated_at,
+            deleted_at,
+        	published_at
+        FROM posts
+       WHERE id =any($1) AND deleted_at IS NULL
     `
 
 	getPostsByAuthorIdQuery = `
@@ -50,7 +67,8 @@ const (
             author_id,
             created_at,
             updated_at,
-            deleted_at
+            deleted_at,
+            published_at
         FROM posts
         WHERE author_id = $1 AND deleted_at IS NULL
         ORDER BY created_at DESC
@@ -63,7 +81,8 @@ const (
             author_id,
             created_at,
             updated_at,
-            deleted_at
+            deleted_at,
+            published_at
         FROM posts
         WHERE deleted_at IS NULL
     `
@@ -73,6 +92,28 @@ var _ posts.Repository = (*PgPostRepository)(nil)
 
 type PgPostRepository struct {
 	db *sqlx.DB
+}
+
+func (i PgPostRepository) MGetByIds(ctx context.Context, ids []string) ([]*posts.Post, error) {
+	var postsDB []postDB
+	err := i.db.SelectContext(ctx, &postsDB, getPostByIdsQuery, pq.Array(ids))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return []*posts.Post{}, nil
+		}
+		return nil, posts.ErrPostInternalError
+	}
+
+	result := make([]*posts.Post, len(postsDB))
+	for i, postDB := range postsDB {
+		post, err := postDB.toDomain()
+		if err != nil {
+			return nil, fmt.Errorf("error converting post to domain: %w", err)
+		}
+		result[i] = post
+	}
+
+	return result, nil
 }
 
 func NewPgPostRepository(db *sqlx.DB) *PgPostRepository {
@@ -97,7 +138,10 @@ func (i PgPostRepository) GetById(ctx context.Context, id string) (*posts.Post, 
 	var postDB postDB
 	err := i.db.GetContext(ctx, &postDB, getPostByIdQuery, id)
 	if err != nil {
-		return nil, fmt.Errorf("error getting post by id: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, posts.ErrPostNotFound
+		}
+		return nil, posts.ErrPostInternalError
 	}
 
 	return postDB.toDomain()
@@ -107,7 +151,10 @@ func (i PgPostRepository) GetByAuthorId(ctx context.Context, authorId string) ([
 	var postsDB []postDB
 	err := i.db.SelectContext(ctx, &postsDB, getPostsByAuthorIdQuery, authorId)
 	if err != nil {
-		return nil, fmt.Errorf("error getting posts by author id: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return []*posts.Post{}, nil
+		}
+		return nil, posts.ErrPostInternalError
 	}
 
 	result := make([]*posts.Post, 0, len(postsDB))
@@ -139,12 +186,13 @@ func (c *ContentJSON) Scan(value interface{}) error {
 }
 
 type postDB struct {
-	ID        string      `db:"id"`
-	Content   ContentJSON `db:"content"`
-	AuthorId  string      `db:"author_id"`
-	CreatedAt time.Time   `db:"created_at"`
-	UpdatedAt time.Time   `db:"updated_at"`
-	DeletedAt *time.Time  `db:"deleted_at"`
+	ID          string      `db:"id"`
+	Content     ContentJSON `db:"content"`
+	AuthorId    string      `db:"author_id"`
+	CreatedAt   time.Time   `db:"created_at"`
+	UpdatedAt   time.Time   `db:"updated_at"`
+	DeletedAt   *time.Time  `db:"deleted_at"`
+	PublishedAt time.Time   `db:"published_at"`
 }
 
 type ContentDB struct {
@@ -162,30 +210,32 @@ func toPostDB(post *posts.Post) postDB {
 	}
 
 	return postDB{
-		ID:        post.ID,
-		Content:   contentJSON,
-		AuthorId:  post.AuthorId,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
-		DeletedAt: post.DeletedAt,
+		ID:          post.ID,
+		Content:     contentJSON,
+		AuthorId:    post.AuthorId,
+		CreatedAt:   post.CreatedAt,
+		UpdatedAt:   post.UpdatedAt,
+		DeletedAt:   post.DeletedAt,
+		PublishedAt: post.PublishedAt,
 	}
 }
 
 func (p postDB) toDomain() (*posts.Post, error) {
-	contents := make([]content.Content, 0, len(p.Content))
-	for _, contentDB := range p.Content {
-		contents = append(contents, content.Content{
+	contents := make([]content.Content, len(p.Content))
+	for i, contentDB := range p.Content {
+		contents[i] = content.Content{
 			Type: content.ContentType(contentDB.Type),
 			Text: contentDB.Text,
-		})
+		}
 	}
 
 	return &posts.Post{
-		ID:        p.ID,
-		Contents:  contents,
-		AuthorId:  p.AuthorId,
-		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.UpdatedAt,
-		DeletedAt: p.DeletedAt,
+		ID:          p.ID,
+		Contents:    contents,
+		AuthorId:    p.AuthorId,
+		CreatedAt:   p.CreatedAt,
+		UpdatedAt:   p.UpdatedAt,
+		DeletedAt:   p.DeletedAt,
+		PublishedAt: p.PublishedAt,
 	}, nil
 }

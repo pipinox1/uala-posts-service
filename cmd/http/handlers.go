@@ -3,10 +3,16 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"net/http"
+	"strings"
 	"uala-posts-service/config"
 	"uala-posts-service/internal/application"
 	"uala-posts-service/internal/domain/posts"
+)
+
+var (
+	MissingPostId = errors.New("missing post ids")
 )
 
 func createPost(deps *config.Dependencies) http.HandlerFunc {
@@ -32,6 +38,69 @@ func createPost(deps *config.Dependencies) http.HandlerFunc {
 	}
 }
 
+func getPost(deps *config.Dependencies) http.HandlerFunc {
+	getPost := application.NewGetPostById(deps.PostRepository)
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := chi.URLParam(r, "post_id")
+		cmd := &application.GetPostByIdCommand{
+			Id: id,
+		}
+		response, err := getPost.Exec(r.Context(), cmd)
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			handleError(w, err)
+			return
+		}
+	}
+}
+
+func getPostByAuthor(deps *config.Dependencies) http.HandlerFunc {
+	getPost := application.NewGetPostByAuthor(deps.PostRepository)
+	return func(w http.ResponseWriter, r *http.Request) {
+		authorID := chi.URLParam(r, "author_id")
+		cmd := &application.GetPostsByAuthorCommand{
+			AuthorID: authorID,
+		}
+		response, err := getPost.Exec(r.Context(), cmd)
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			handleError(w, err)
+			return
+		}
+	}
+}
+func getPosts(deps *config.Dependencies) http.HandlerFunc {
+	getPosts := application.NewGetPosts(deps.PostRepository)
+	return func(w http.ResponseWriter, r *http.Request) {
+		ids := r.URL.Query().Get("ids")
+		if ids == "" {
+			handleError(w, posts.ErrPostEmptyContent)
+			return
+		}
+		cmd := &application.GetPostsCommand{
+			IDs: strings.Split(ids, ","),
+		}
+		response, err := getPosts.Exec(r.Context(), cmd)
+		if err != nil {
+			handleError(w, err)
+			return
+		}
+
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			handleError(w, err)
+			return
+		}
+	}
+}
+
 func handleError(w http.ResponseWriter, err error) {
 	if err == nil {
 		return
@@ -44,6 +113,12 @@ func handleError(w http.ResponseWriter, err error) {
 		errorResp = ErrorResponse{
 			StatusCode: http.StatusBadRequest,
 			Message:    "Empty Contents",
+			Code:       err.Error(),
+		}
+	case errors.Is(err, MissingPostId):
+		errorResp = ErrorResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    "Missing post ids",
 			Code:       err.Error(),
 		}
 	default:

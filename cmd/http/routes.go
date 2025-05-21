@@ -22,6 +22,9 @@ func SetupRouterAndRoutes(config *config.Config, deps *config.Dependencies) chi.
 		r.Use(ddchi.Middleware(ddchi.WithServiceName(config.ServiceName)))
 
 		r.Post("/", createPost(deps))
+		r.Get("/{post_id}", getPost(deps))
+		r.Get("/", getPosts(deps))
+		r.Get("/author/{author_id}", getPostByAuthor(deps))
 	})
 
 	return router

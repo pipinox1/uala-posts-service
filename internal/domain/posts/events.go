@@ -8,8 +8,8 @@ const (
 )
 
 type PostCreatedEvent struct {
-	ID       string
-	AuthorID string
+	ID       string `json:"id"`
+	AuthorID string `json:"author_id"`
 }
 
 func (p PostCreatedEvent) Key() string {

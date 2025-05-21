@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/google/uuid v1.6.0
+	github.com/huandu/go-sqlbuilder v1.35.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/lib/pq v1.10.2
 	github.com/nats-io/nats.go v1.42.0
@@ -30,6 +31,7 @@ require (
 	github.com/hashicorp/go-secure-stdlib/parseutil v0.1.7 // indirect
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
+	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
