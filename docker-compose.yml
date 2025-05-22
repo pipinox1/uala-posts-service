@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   post-service:
-    image: uala-posts-service:0.0.1
+    image: uala-posts-service:latest
     container_name: post-service
     ports:
       - "8080:8080"
@@ -44,7 +44,7 @@ services:
     restart: unless-stopped
 
   followers-service:
-    image: uala-followers-service:0.0.1
+    image: uala-followers-service:latest
     container_name: followers-service
     ports:
       - "8082:8080"
@@ -56,7 +56,7 @@ services:
     restart: unless-stopped
 
   timeline-service:
-    image: uala-timeline-service:0.0.1
+    image: uala-timeline-service:latest
     container_name: timeline-service
     ports:
       - "8081:8080"

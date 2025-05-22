@@ -6,7 +6,7 @@ Manage posts creations and publish events related to posts.
 
 #### Create post
 
-```http
+```
   POST /api/v1/posts
 ```
 
@@ -29,7 +29,7 @@ Manage posts creations and publish events related to posts.
 
 #### Get post by ID
 
-```http
+```
   GET /api/v1/posts/${id}
 ```
 
@@ -39,7 +39,7 @@ Manage posts creations and publish events related to posts.
 
 #### Get multiple posts by IDs
 
-```http
+```
   GET /api/v1/posts?ids=${comma_separated_ids}
 ```
 
