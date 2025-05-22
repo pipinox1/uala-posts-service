@@ -3,65 +3,98 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: services-postgres
+    container_name: postgres
     environment:
       POSTGRES_USER: eduardopena
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: timelines
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-postgres:/docker-entrypoint-initdb.d
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U eduardopena -d timelines"]
+      test: [ "CMD-SHELL", "pg_isready -U eduardopena -d timelines" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   nats:
     image: nats:2.9-alpine
-    container_name: timeline-nats
+    container_name: nats
     ports:
-      - "4222:4222"  # Cliente
-      - "8222:8222"  # HTTP Monitor
+      - "4222:4222"
+      - "8222:8222"
     command: "--jetstream --http_port 8222"
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8222/healthz"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
-  # Servicio de Posts
   post-service:
     image: uala-posts-service:0.0.1
     container_name: post-service
-    environment:
-      - ENV=dev
-      - SERVICE_NAME=post-service
-      - PORT=8082
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=eduardopena
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=posts
-      - REDIS_HOST=redis:6379
-      - AWS_REGION=localhost
-      - AWS_ENDPOINT=http://localstack:4566
-      - AWS_TABLE=posts-table
-      - AWS_ACCOUNT=lhg4g
-      - AWS_SECRET=qcdbm4
-      - NATS_URL=nats://nats:4222
     ports:
       - "8080:8080"
+    environment:
+      - ENVIRONMENT=dev
     depends_on:
       postgres:
         condition: service_healthy
       nats:
+        condition: service_started
+    restart: unless-stopped
+
+  followers-service:
+    image: uala-followers-service:0.0.1
+    container_name: followers-service
+    ports:
+      - "8082:8080"
+    environment:
+      - ENVIRONMENT=dev
+    depends_on:
+      postgres:
         condition: service_healthy
     restart: unless-stopped
 
+  timeline-service:
+    image: uala-timeline-service:0.0.1
+    container_name: followers-service
+    ports:
+      - "8081:8080"
+    environment:
+      - ENVIRONMENT=dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      dynamodb-local:
+        condition: service_started
+    restart: unless-stopped
+
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb -inMemory"
+    restart: unless-stopped
+
+  dynamodb-init:
+    image: python:3.11
+    container_name: dynamodb-init
+    volumes:
+      - ./init-dynamodb:/app
+    working_dir: /app
+    command: python init.py
+    environment:
+      - AWS_ACCESS_KEY_ID=fake
+      - AWS_SECRET_ACCESS_KEY=fake
+      - AWS_REGION=localhost
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+    depends_on:
+      dynamodb-local:
+        condition: service_started
+    restart: "no"
+
 volumes:
   postgres_data:
-  localstack_data:

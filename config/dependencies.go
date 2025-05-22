@@ -17,7 +17,7 @@ type Dependencies struct {
 }
 
 func BuildDependencies(config Config) (*Dependencies, error) {
-	natsPublisher := events.NewNatsPublisher()
+	natsPublisher := events.NewNatsPublisher(config.Nats.Host)
 	url := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s",
 		config.Postgres.User,

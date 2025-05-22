@@ -9,19 +9,24 @@ import (
 )
 
 type Config struct {
-	ServiceName string   `json:" "`
-	Env         string   `json:"env"`
-	Port        string   `json:"port"`
-	Postgres    Postgres `json:"postgres"`
+	ServiceName string   `mapstructure:"service_name"`
+	Env         string   `mapstructure:"env"`
+	Port        string   `mapstructure:"port"`
+	Postgres    Postgres `mapstructure:"postgres"`
+	Nats        Nats     `mapstructure:"nats"`
+}
+
+type Nats struct {
+	Host string `mapstructure:"host"`
 }
 
 type Postgres struct {
-	Host     string `json:"postgres_host"`
-	Port     string `json:"port"`
-	Password string `json:"password"`
-	Database string `json:"database"`
-	User     string `json:"user"`
-	UseSSL   bool   `json:"use_ssl"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Password string `mapstructure:"password"`
+	Database string `mapstructure:"database"`
+	User     string `mapstructure:"user"`
+	UseSSL   bool   `mapstructure:"use_ssl"`
 }
 
 func ReadConfig() (*Config, error) {

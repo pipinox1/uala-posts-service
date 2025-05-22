@@ -1,0 +1,2 @@
+CREATE DATABASE posts;
+CREATE DATABASE followers;

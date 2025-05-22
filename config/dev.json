@@ -1,16 +1,16 @@
 {
-  "env": "local",
+  "env": "dev",
   "service-name": "posts-service",
   "postgres": {
     "port": 5432,
     "user": "eduardopena",
-    "password": "",
-    "host": "localhost",
+    "password": "password",
+    "host": "postgres",
     "database": "posts",
     "ssl": false
   },
   "nats": {
-    "host": "localhost"
+    "host": "nats"
   },
   "port": 8080
 }
