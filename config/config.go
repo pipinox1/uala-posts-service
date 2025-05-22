@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"os"
 	"path/filepath"
 	"runtime"
 )
@@ -30,7 +31,7 @@ func ReadConfig() (*Config, error) {
 	}
 
 	configDir := filepath.Join(filepath.Dir(filename))
-	viper.SetConfigName("local")
+	viper.SetConfigName(getConfigName())
 	viper.SetConfigType("json")
 	viper.AddConfigPath(configDir)
 
@@ -46,4 +47,12 @@ func ReadConfig() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func getConfigName() string {
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" {
+		return "local"
+	}
+	return env
 }

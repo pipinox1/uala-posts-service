@@ -1,0 +1,49 @@
+
+# Post Service
+
+Manage posts creations and publish events related to posts.
+
+## API Reference
+
+#### Create post
+
+```http
+  POST /api/v1/posts
+```
+
+| Parameter | Type     | Description                |
+| :-------- | :------- | :------------------------- |
+| `Content-Type` | `string` | **Required**. application/json |
+
+**Request Body:**
+
+| Field | Type     | Description                       |
+| :---- | :------- | :-------------------------------- |
+| `id`  | `string` | **Required**. Unique identifier for the post |
+| `author_id` | `string` | **Required**. ID of the post author |
+| `contents` | `array` | **Required**. Array of content objects |
+| `contents[].type` | `string` | **Required**. Type of content (e.g., "text") |
+| `contents[].text` | `string` | Text content |
+| `published_at` | `string` | **Required**. ISO 8601 timestamp |
+| `created_at` | `string` | **Required**. ISO 8601 timestamp |
+| `updated_at` | `string` | **Required**. ISO 8601 timestamp |
+
+#### Get post by ID
+
+```http
+  GET /api/v1/posts/${id}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `id`      | `string` | **Required**. ID of post to fetch |
+
+#### Get multiple posts by IDs
+
+```http
+  GET /api/v1/posts?ids=${comma_separated_ids}
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `ids`     | `string` | **Required**. Comma-separated list of post IDs (URL encoded) |
