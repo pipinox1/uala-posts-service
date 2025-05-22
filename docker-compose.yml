@@ -57,7 +57,7 @@ services:
 
   timeline-service:
     image: uala-timeline-service:0.0.1
-    container_name: followers-service
+    container_name: timeline-service
     ports:
       - "8081:8080"
     environment:
@@ -85,7 +85,7 @@ services:
     volumes:
       - ./init-dynamodb:/app
     working_dir: /app
-    command: python init.py
+    command: sh -c "pip install boto3 && python init.py"
     environment:
       - AWS_ACCESS_KEY_ID=fake
       - AWS_SECRET_ACCESS_KEY=fake
