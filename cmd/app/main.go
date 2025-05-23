@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	_ "go.uber.org/automaxprocs/maxprocs"
 	httpServer "net/http"
 	"os"
 	"os/signal"
